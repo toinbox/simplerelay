@@ -41,7 +41,7 @@ Used for sending verification and password reset emails to users. If left empty,
 | `RELAY_SMTP_HOST` | SMTP server | `smtp.gmail.com` |
 | `RELAY_SMTP_PORT` | Port | `587` |
 | `RELAY_SMTP_USER` | Username | `noreply@example.com` |
-| `RELAY_SMTP_PASSWORD` | Password or app password | `xxxx xxxx xxxx xxxx` |
+| `RELAY_SMTP_PASSWORD` | Password |
 | `RELAY_SMTP_FROM` | From address | `noreply@example.com` |
 | `RELAY_SMTP_TLS` | Use STARTTLS | `true` |
 
