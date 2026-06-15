@@ -61,7 +61,7 @@ git clone https://github.com/toinbox/simplerelay.git
 cd simplerelay
 cp env.example .env
 nano .env
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
 Dashboard: `http://your-server:8080`
