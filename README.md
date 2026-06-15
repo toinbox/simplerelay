@@ -73,7 +73,7 @@ Every registered user gets access to:
 
 **Dashboard** - overview of today's sent count, errors, provider health status with response times, and recent mail log entries.
 
-**Setup Wizard** - guided first-time setup: enter email, auto-detect provider and SMTP settings, test connection, run DNS check (SPF/DKIM/DMARC), configure access control (IP whitelist or SMTP AUTH), send test email.
+**Setup Wizard** - guided first-time setup: enter email, auto-detect provider and SMTP settings, test connection, run DNS check (SPF/DKIM/DMARC), configure access control (IP whitelist, optionally SMTP AUTH), send test email.
 
 **Providers** - manage SMTP providers (upstream accounts used for sending). Each provider has:
 - Auto-detection of SMTP settings from email address (Gmail, Outlook, Yahoo, Seznam, Zoho, SES, SendGrid, Mailgun, or custom SMTP)
@@ -82,7 +82,7 @@ Every registered user gets access to:
 - DNS validation (SPF, DKIM, DMARC) with provider-aware DKIM selector scanning
 - Send test email through the relay
 - Daily sending limit with usage counter
-- Per-provider access control - IP whitelist and/or SMTP AUTH credentials with password generation, show/hide toggle, and regeneration
+- Per-provider access control (required) - IP whitelist is mandatory for the relay to accept connections. SMTP AUTH credentials can be added as additional authentication. Supports password generation, show/hide toggle, and regeneration.
 
 **Mail Logs** - searchable log of all sent, failed, and bounced messages with sender, recipient, subject, status, client IP, and timestamp.
 
@@ -108,6 +108,7 @@ Admin users see additional sections:
 ## System Features
 
 - Postfix-based relay with per-sender routing to correct upstream SMTP
+- Built-in policy server (access control) - every provider requires a whitelisted IP address. Without it, the relay rejects all connections. SMTP AUTH credentials are optional as additional layer. No open relay possible.
 - Automatic provider detection from email address (MX/DNS lookup fallback for unknown domains)
 - User registration with email verification, password reset, password change
 - JWT authentication with httponly cookies
