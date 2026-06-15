@@ -2,10 +2,10 @@ services:
   relay:
     build: .
     environment:
-      - TZ=Europe/Prague
+      - TZ=Europe/London
     ports:
       - "2525:2525"
-      - "8580:8080"
+      - "8080:8080"
     volumes:
       - ./data/relay:/data
     env_file:
