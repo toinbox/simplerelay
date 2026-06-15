@@ -17,6 +17,10 @@ export default function Providers() {
   const [testingId, setTestingId] = useState(null);
   const [testTo, setTestTo] = useState('');
   const [testStatus, setTestStatus] = useState({});
+  const [dnsCheckId, setDnsCheckId] = useState(null);
+  const [dnsResults, setDnsResults] = useState({});
+  const [dnsLoading, setDnsLoading] = useState(null);
+  const [showPassword, setShowPassword] = useState({});
 
   // Per-provider clients
   const [providerClients, setProviderClients] = useState({});
@@ -143,6 +147,28 @@ export default function Providers() {
     } catch (e) {
       setTestStatus({ ...testStatus, [providerEmail]: String(e) });
     }
+  };
+
+  const checkDns = async (provider) => {
+    if (dnsCheckId === provider.id) {
+      setDnsCheckId(null);
+      return;
+    }
+    setDnsCheckId(provider.id);
+    setDnsLoading(provider.id);
+    try {
+      const domain = provider.email.split('@')[1];
+      const res = await apiFetch('/api/providers/dns-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, provider_type: provider.provider_type }),
+      });
+      const data = await res.json();
+      setDnsResults(prev => ({ ...prev, [provider.id]: data }));
+    } catch (e) {
+      setDnsResults(prev => ({ ...prev, [provider.id]: null }));
+    }
+    setDnsLoading(null);
   };
 
   // --- Client (access control) management per provider ---
@@ -442,7 +468,20 @@ export default function Providers() {
                                 {c.client_type === 'ip' ? 'IP' : 'AUTH'}
                               </span>
                               <span style={{ fontWeight: 500, fontFamily: 'monospace' }}>
-                                {c.client_type === 'ip' ? (c.ip_cidr || c.ip_address) : (c.smtp_password_plain || '***')}
+                                {c.client_type === 'ip' ? (c.ip_cidr || c.ip_address) : (
+                                  c.smtp_password_plain ? (
+                                    <>
+                                      {showPassword[c.id] ? c.smtp_password_plain : '••••••••••••'}
+                                      <button
+                                        onClick={() => setShowPassword(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontSize: 12 }}
+                                        title={showPassword[c.id] ? 'Hide' : 'Show'}
+                                      >
+                                        {showPassword[c.id] ? '🙈' : '👁'}
+                                      </button>
+                                    </>
+                                  ) : '***'
+                                )}
                               </span>
                             </div>
                             <div style={{ display: 'flex', gap: 4 }}>
@@ -482,11 +521,40 @@ export default function Providers() {
               </div>
 
               {/* Provider actions */}
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => checkDns(p)}>
+                  {dnsLoading === p.id ? t('common.loading') : '🔍 DNS'}
+                </button>
                 <button className="btn btn-secondary btn-sm" onClick={() => testProvider(p.id)}>{t('providers.test')}</button>
                 <button className="btn btn-secondary btn-sm" onClick={() => setTestingId(testingId === p.id ? null : p.id)}>{t('wizard.step5_test_send')}</button>
                 <button className="btn btn-danger btn-sm" onClick={() => deleteProvider(p.id, p.name)}>{t('providers.delete')}</button>
               </div>
+
+              {/* DNS check results */}
+              {dnsCheckId === p.id && dnsResults[p.id] && (
+                <div style={{ marginTop: 12 }}>
+                  {dnsResults[p.id].map((r, i) => (
+                    <div key={i} className="dns-result">
+                      <span className={r.status === 'ok' ? 'dns-ok' : 'dns-missing'}>
+                        {r.status === 'ok' ? '✓' : '✗'}
+                      </span>
+                      <div>
+                        <strong>{t(`dns.${r.record_type}_record`)}</strong>
+                        {' - '}
+                        <span style={{ color: r.status === 'ok' ? 'var(--success, #38a169)' : 'var(--warning, #d69e2e)' }}>
+                          {t(`dns.status_${r.status}`)}
+                        </span>
+                        {r.current_value && (
+                          <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: 4, wordBreak: 'break-all' }}>
+                            {r.current_value}
+                          </div>
+                        )}
+                        {r.suggestion && <div className="dns-suggestion">{r.suggestion}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Test email */}
               {testingId === p.id && (
