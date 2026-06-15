@@ -1,0 +1,39 @@
+#
+# SmartRelay Postfix master.cf
+# Listen on port 2525 instead of 25
+#
+2525      inet  n       -       n       -       -       smtpd
+pickup    unix  n       -       y       60      1       pickup
+cleanup   unix  n       -       y       -       0       cleanup
+qmgr      unix  n       -       n       300     1       qmgr
+tlsmgr    unix  -       -       y       1000?   1       tlsmgr
+rewrite   unix  -       -       y       -       -       trivial-rewrite
+bounce    unix  -       -       y       -       0       bounce
+defer     unix  -       -       y       -       0       bounce
+trace     unix  -       -       y       -       0       bounce
+verify    unix  -       -       y       -       1       verify
+flush     unix  n       -       y       1000?   0       flush
+proxymap  unix  -       -       n       -       -       proxymap
+proxywrite unix -       -       n       -       1       proxymap
+smtp      unix  -       -       y       -       -       smtp
+relay     unix  -       -       y       -       -       smtp
+        -o syslog_name=postfix/$service_name
+smtps     unix  -       -       y       -       -       smtp
+        -o syslog_name=postfix/smtps
+        -o smtp_tls_wrappermode=yes
+        -o smtp_tls_security_level=encrypt
+showq     unix  n       -       y       -       -       showq
+#
+# SmartRelay stealth pipe transport — Python sends via SOCKS5 proxy
+simplerelay-pipe unix - n n - 10 pipe
+        flags=R user=nobody argv=/usr/local/bin/python3 /app/backend/services/pipe_transport.py ${sender} ${recipient} ${client_address}
+#
+error     unix  -       -       y       -       -       error
+retry     unix  -       -       y       -       -       error
+discard   unix  -       -       y       -       -       discard
+local     unix  -       n       n       -       -       local
+virtual   unix  -       n       n       -       -       virtual
+lmtp      unix  -       -       y       -       -       lmtp
+anvil     unix  -       -       y       -       1       anvil
+scache    unix  -       -       y       -       1       scache
+postlog   unix-dgram n  -       n       -       1       postlogd

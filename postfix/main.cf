@@ -1,0 +1,15 @@
+# SmartRelay — initial config, will be regenerated
+smtpd_banner = SmartRelay ESMTP
+biff = no
+append_dot_mydomain = no
+inet_interfaces = all
+inet_protocols = ipv4
+myhostname = smartrelay.local
+mydomain = local
+myorigin = $mydomain
+mydestination =
+mynetworks = 127.0.0.0/8
+smtpd_relay_restrictions = permit_mynetworks reject_unauth_destination
+smtp_tls_security_level = may
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtp_tls_loglevel = 1
