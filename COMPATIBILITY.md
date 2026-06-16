@@ -3,9 +3,10 @@
 Central list of devices, software, and systems that work with SimpleRelay as SMTP relay on your LAN.
 
 All examples assume SimpleRelay running at `192.168.1.50` port `2525`.
-Sender/From address must match the provider email configured in SimpleRelay (e.g. `you@gmail.com`).
 
-> **Important:** Every device must set its From/Sender address to the exact email of the provider configured in SimpleRelay. If the From address doesn't match, SimpleRelay won't route the message.
+> **From / Sender address** must match the provider email configured in SimpleRelay (e.g. `you@gmail.com`). If the From address doesn't match, SimpleRelay won't route the message.
+
+> **Recipient / To address** is configured in each device's own notification settings. SimpleRelay relays to any recipient - it only checks that the From address matches your configured provider.
 
 > **Port note:** Some devices only support port 25. Remap in `docker-compose.yml`: change `"2525:2525"` to `"25:2525"`.
 
@@ -24,7 +25,7 @@ Datacenter > Notifications > Add > SMTP
 | Encryption | Insecure |
 | Authentication | unchecked |
 | From Address | `you@gmail.com` |
-| Recipient(s) | select target user |
+| Recipient(s) | your target email |
 
 Proxmox 8.1+ talks SMTP directly, no Postfix config needed.
 
@@ -36,31 +37,37 @@ Edit `/etc/postfix/main.cf`:
 relayhost = [192.168.1.50]:2525
 ```
 
-Restart: `systemctl restart postfix`
+Set the From address:
 
-### VMware ESXi
-
-Host > Manage > System > Advanced Settings:
-
-| Setting | Value |
-|---------|-------|
-| `UserVars.esxSMTPServer` | `192.168.1.50` |
-| `UserVars.esxSMTPPort` | `2525` |
-
-Or via CLI:
 ```
-esxcli system account set --smtp-server 192.168.1.50 --smtp-port 2525
+smtp_generic_maps = hash:/etc/postfix/generic
 ```
 
-### vCenter Server
+In `/etc/postfix/generic`:
+```
+root@yourhost you@gmail.com
+```
+
+Apply and restart:
+```bash
+postmap /etc/postfix/generic
+systemctl restart postfix
+```
+
+### VMware vCenter Server
+
+SMTP notifications in VMware are configured at the **vCenter level** (not on individual ESXi hosts).
 
 Administration > System Configuration > Mail:
 
 | Field | Value |
 |-------|-------|
 | SMTP Server | `192.168.1.50` |
-| SMTP Port | `2525` |
 | Sender | `you@gmail.com` |
+
+For custom port, go to Configure > Settings > Advanced Settings and search for `smtp`. Set `mail.smtp.port` to `2525`.
+
+> **Standalone ESXi** (without vCenter) has no built-in SMTP notification system. Use `msmtp` or Postfix relayhost - see [Linux / Scripts](#7-linux--scripts) section.
 
 ### XCP-ng / Xen Orchestra
 
@@ -112,6 +119,7 @@ Control Panel > Notification > Email:
 | Secure Connection | None |
 | Authentication | unchecked |
 | Sender email | `you@gmail.com` |
+| Recipient email | your target email |
 
 Enable: "Enable email notifications"
 
@@ -164,9 +172,12 @@ System > Settings > Notifications:
 set server=192.168.1.50 port=2525 from=you@gmail.com
 ```
 
-Test: `/tool e-mail send to=you@gmail.com subject="test" body="hello"`
+Test:
+```
+/tool e-mail send to=you@gmail.com subject="test" body="hello"
+```
 
-Note: RouterOS 6.45+ supports custom ports. Older versions use port 25 only.
+Note: RouterOS 6.45+ supports custom ports. Older versions use port 25 only - remap in docker-compose.
 
 ### Ubiquiti UniFi Network
 
@@ -181,14 +192,25 @@ Settings > System > Advanced > Email Notifications:
 
 Note: UI location varies by UniFi version. In 8.x+ look under System Settings > Advanced.
 
-### EdgeRouter
+### Ubiquiti EdgeRouter
 
+EdgeOS uses msmtp for email notifications. Install and configure:
+
+```bash
+sudo apt-get install msmtp
 ```
-set system name-server 8.8.8.8
-set service notification email smtp-server 192.168.1.50
-set service notification email smtp-port 2525
-set service notification email from you@gmail.com
+
+`/etc/msmtprc`:
 ```
+account default
+host 192.168.1.50
+port 2525
+from you@gmail.com
+auth off
+tls off
+```
+
+Test: `echo "EdgeRouter alert" | msmtp you@gmail.com`
 
 ### OpenWRT
 
@@ -210,11 +232,23 @@ tls off
 
 ### VyOS
 
+VyOS has no built-in email notification system. Install msmtp:
+
+```bash
+sudo apt-get install msmtp
 ```
-set system notification email smtp-server 192.168.1.50
-set system notification email smtp-port 2525
-set system notification email from you@gmail.com
+
+`/etc/msmtprc`:
 ```
+account default
+host 192.168.1.50
+port 2525
+from you@gmail.com
+auth off
+tls off
+```
+
+Use in scripts: `echo "VyOS alert" | msmtp you@gmail.com`
 
 ---
 
@@ -245,6 +279,7 @@ Settings > Notifications > Add > Email (SMTP):
 | Port | `2525` |
 | Security | None |
 | From Email | `you@gmail.com` |
+| To Email | your target email |
 
 ### Zabbix
 
@@ -258,6 +293,8 @@ Administration > Media types > Email:
 | Connection security | None |
 | Authentication | None |
 
+Recipient is configured per user in Administration > Users > Media.
+
 ### Nagios / Icinga
 
 Edit notification command in `/etc/nagios/commands.cfg`:
@@ -269,6 +306,8 @@ define command {
                     /usr/bin/mail -S smtp=192.168.1.50:2525 -S from=you@gmail.com -s "$NOTIFICATIONTYPE$ - $HOSTALIAS$/$SERVICEDESC$" $CONTACTEMAIL$
 }
 ```
+
+Recipient (`$CONTACTEMAIL$`) is defined per contact in the Nagios/Icinga configuration.
 
 ### Prometheus Alertmanager
 
@@ -293,6 +332,7 @@ receivers:
 ```
 EMAIL_SENDER="you@gmail.com"
 SEND_EMAIL="YES"
+DEFAULT_RECIPIENT_EMAIL="you@gmail.com"
 ```
 
 `/etc/msmtprc`:
@@ -320,7 +360,7 @@ Setup > Notifications > SMTP Server:
 
 ## 4. IP Cameras & Security
 
-All IP cameras use basic SMTP without OAuth or modern TLS. SimpleRelay is ideal for them.
+IP cameras use basic SMTP without OAuth or modern TLS. SimpleRelay is ideal - it bridges the gap between legacy camera SMTP and modern email providers like Gmail.
 
 ### Hikvision
 
@@ -333,7 +373,7 @@ Configuration > Network > Advanced > Email:
 | Enable SSL/TLS | unchecked |
 | Authentication | unchecked |
 | Sender | `you@gmail.com` |
-| Receiver | your target email |
+| Receiver 1 | your target email |
 
 Attach snapshot: check "Attached Image" under Events > Email Linkage.
 
@@ -347,6 +387,7 @@ Setup > Network > SMTP (Email):
 | Port | `2525` |
 | Anonymous | checked |
 | Sender | `you@gmail.com` |
+| Receiver | your target email |
 | SSL | None |
 
 ### Reolink
@@ -359,6 +400,7 @@ Settings > Surveillance > Email:
 | Port | `2525` |
 | TLS | None |
 | Sender | `you@gmail.com` |
+| Recipient | your target email |
 
 Note: Some Reolink models only support port 25. Remap in docker-compose.
 
@@ -371,6 +413,7 @@ Setup > Events > Recipients > Add Recipient > Email:
 | SMTP Server | `192.168.1.50` |
 | Port | `2525` |
 | From | `you@gmail.com` |
+| To | your target email |
 | Authentication | None |
 
 ### Uniview
@@ -383,6 +426,7 @@ Setup > Network > Email:
 | Port | `2525` |
 | SSL | Disabled |
 | Sender | `you@gmail.com` |
+| Receiver | your target email |
 
 ### Hanwha / Wisenet
 
@@ -394,6 +438,7 @@ Setup > Event > SMTP:
 | Port | `2525` |
 | Use SSL | unchecked |
 | Sender | `you@gmail.com` |
+| Receiver | your target email |
 
 ---
 
@@ -414,7 +459,14 @@ notify:
     recipient: you@gmail.com
 ```
 
-Restart Home Assistant after edit.
+Restart Home Assistant after edit. Use in automations:
+
+```yaml
+action:
+  - action: notify.email
+    data:
+      message: "Motion detected!"
+```
 
 ### Node-RED
 
@@ -426,6 +478,7 @@ Use `node-red-node-email` node:
 | Port | `2525` |
 | Secure | No |
 | From | `you@gmail.com` |
+| To | your target email |
 
 ### openHAB
 
@@ -463,6 +516,7 @@ Menu > Notifications > SMTP Server:
 | Port | `2525` |
 | Use SSL/TLS | unchecked |
 | From | `you@gmail.com` |
+| To | your target email |
 
 ### Duplicati
 
@@ -483,6 +537,7 @@ Settings > Mail:
 | Mail server name | `192.168.1.50` |
 | Mail server port | `2525` |
 | Sender email | `you@gmail.com` |
+| Recipient email | your target email |
 
 ### Bacula / Bareos
 
@@ -498,7 +553,7 @@ Messages {
 
 ### BorgBackup / Restic (scripts)
 
-See section "Linux / Scripts" below.
+See section [Linux / Scripts](#7-linux--scripts) below.
 
 ---
 
@@ -619,6 +674,7 @@ PowerChute Business Edition > Email Settings:
 | SMTP Server | `192.168.1.50` |
 | Port | `2525` |
 | From | `you@gmail.com` |
+| To | your target email |
 | Authentication | None |
 
 ### Eaton UPS (Network Card)
@@ -640,6 +696,7 @@ Notifications > SMTP:
 | SMTP Server | `192.168.1.50` |
 | Port | `2525` |
 | Sender | `you@gmail.com` |
+| Recipient | your target email |
 
 ### HP LaserJet (Enterprise)
 
@@ -664,7 +721,7 @@ Web UI > Notifications or Scan-to-Email:
 | Authentication | Off |
 | From | `you@gmail.com` |
 
-Scan-to-email: set the relay as SMTP server, your Gmail as From address.
+Scan-to-email: set the relay as SMTP server, your provider email as From address.
 
 ---
 
