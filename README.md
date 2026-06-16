@@ -117,6 +117,32 @@ Admin users see additional sections:
 - Multilingual UI - English, Czech, German, Russian, Spanish with runtime language switching
 - Single Docker Compose deployment (Postfix + PostgreSQL + FastAPI + React/Vite)
 
+## Home Network / Homelab Use Case
+
+SimpleRelay works great as a central SMTP relay on your home network. Instead of configuring Gmail credentials in every device separately, you point everything at SimpleRelay on your LAN and manage credentials in one place.
+
+```
+Your home network (192.168.1.x)
+┌─────────────────────────────────────────────────────────┐
+│                                                         │
+│  Proxmox ──────┐                                        │
+│  Synology NAS ─┤                                        │
+│  pfSense ──────┤    SimpleRelay          Gmail/Outlook   │
+│  Grafana ──────┼──► 192.168.1.50:2525 ──► SMTP ──► ✉️  │
+│  Uptime Kuma ──┤    (no auth needed)     (app password)  │
+│  Home Asst. ───┤                                        │
+│  Cameras ──────┘                                        │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+  No NAT. No port forwarding. No public IP needed.
+```
+
+- 10 devices = 10 places to maintain Gmail app passwords. With SimpleRelay: one.
+- No need for public IP, port forwarding, or your own mail server.
+- Add `0.0.0.0/0` as allowed subnet and every device on your network can send.
+
+See **[COMPATIBILITY.md](COMPATIBILITY.md)** for the full list of 50+ compatible devices with setup instructions - servers, firewalls, cameras, monitoring tools, backup software, UPS, printers and more.
+
 ## Tech Stack
 
 FastAPI (Python 3.12), Postfix, PostgreSQL 16, React + Vite, Docker Compose
