@@ -50,8 +50,8 @@ export default function AdminLimits({ token }) {
           <thead>
             <tr>
               <th>{t('admin.provider_type')}</th>
-              <th style={{ width: 160 }}>{t('admin.daily_limit')}</th>
-              <th style={{ width: 100 }}></th>
+              <th style={{ width: 200 }}>{t('admin.daily_limit')}</th>
+              <th style={{ width: 120 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -67,18 +67,15 @@ export default function AdminLimits({ token }) {
                       className="form-input"
                       type="number"
                       min="0"
-                      style={{ width: 100, padding: '4px 8px' }}
+                      style={{ width: 120, padding: '4px 8px' }}
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && save(lim.provider_type)}
                       autoFocus
                     />
                   ) : (
-                    <span
-                      style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: 4, background: 'var(--bg-secondary)' }}
-                      onClick={() => { setEditing(lim.provider_type); setEditValue(String(lim.daily_limit)); }}
-                    >
-                      {lim.daily_limit.toLocaleString()} / {t('admin.daily_limit').toLowerCase()}
+                    <span style={{ whiteSpace: 'nowrap' }}>
+                      {lim.daily_limit.toLocaleString()}
                     </span>
                   )}
                 </td>
@@ -92,7 +89,13 @@ export default function AdminLimits({ token }) {
                     </div>
                   ) : saved === lim.provider_type ? (
                     <span style={{ color: 'var(--success)', fontSize: 13 }}>✓ {t('admin.daily_limit_saved')}</span>
-                  ) : null}
+                  ) : (
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '2px 8px', fontSize: 11 }}
+                      onClick={() => { setEditing(lim.provider_type); setEditValue(String(lim.daily_limit)); }}
+                    >{t('common.edit')}</button>
+                  )}
                 </td>
               </tr>
             ))}
