@@ -136,6 +136,7 @@ class Provider(Base):
     daily_limit = Column(Integer, nullable=True)
     daily_sent = Column(Integer, nullable=False, default=0)
     daily_reset_at = Column(DateTime, nullable=True)
+    domain_routing = Column(Boolean, nullable=False, default=False)
 
     # Expiration
     expires_at = Column(DateTime, nullable=True)  # null = no expiry

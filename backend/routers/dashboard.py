@@ -19,6 +19,7 @@ class MailLogOut(BaseModel):
     recipient: str
     subject: str | None
     provider_name: str | None
+    proxy_ip: str | None
     status: str
     error_message: str | None
     client_ip: str | None
@@ -43,6 +44,7 @@ class DashboardStats(BaseModel):
 @router.get("/logs", response_model=list[MailLogOut])
 def get_logs(
     status: str | None = None,
+    search: str | None = None,
     limit: int = Query(default=50, le=500),
     offset: int = 0,
     db: Session = Depends(get_db),
@@ -56,7 +58,36 @@ def get_logs(
     if status:
         query = query.filter(MailLog.status == status)
 
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            (MailLog.sender.ilike(search_pattern)) |
+            (MailLog.recipient.ilike(search_pattern)) |
+            (MailLog.subject.ilike(search_pattern))
+        )
+
     return query.offset(offset).limit(limit).all()
+
+
+@router.get("/logs/count")
+def get_logs_count(
+    status: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Get total log count for pagination."""
+    query = db.query(func.count(MailLog.id)).filter(MailLog.user_id == user.id)
+    if status:
+        query = query.filter(MailLog.status == status)
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            (MailLog.sender.ilike(search_pattern)) |
+            (MailLog.recipient.ilike(search_pattern)) |
+            (MailLog.subject.ilike(search_pattern))
+        )
+    return {"count": query.scalar() or 0}
 
 
 # --- Dashboard ---

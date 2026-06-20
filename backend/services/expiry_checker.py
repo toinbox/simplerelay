@@ -25,6 +25,19 @@ def check_expirations():
             provider.status = ProviderStatus.LOCKED
             provider.locked_reason = "Relay expired"
 
+        # Auto-unlock providers whose expiry was extended
+        renewed = db.query(Provider).filter(
+            Provider.expires_at != None,
+            Provider.expires_at > now,
+            Provider.is_locked == True,
+            Provider.locked_reason == "Relay expired",
+        ).all()
+
+        for provider in renewed:
+            provider.is_locked = False
+            provider.status = ProviderStatus.ACTIVE
+            provider.locked_reason = None
+
         # Also check users with relay_expiry_days — set expires_at on providers
         # that don't have one yet
         users_with_expiry = db.query(User).filter(
@@ -40,16 +53,12 @@ def check_expirations():
             ).all()
 
             for provider in unset:
-                provider.expires_at = provider.created_at + timedelta(
+                provider.expires_at = now + timedelta(
                     days=user.relay_expiry_days
                 )
-                # Check if already expired
-                if provider.expires_at <= now:
-                    provider.is_locked = True
-                    provider.status = ProviderStatus.LOCKED
-                    provider.locked_reason = "Relay expired"
+                # Note: newly created providers get future expiry
 
-        if expired or any(u for u in users_with_expiry):
+        if expired or renewed or any(u for u in users_with_expiry):
             db.commit()
 
     finally:

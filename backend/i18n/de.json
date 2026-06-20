@@ -91,7 +91,9 @@
     "preset_custom": "Eigener SMTP",
     "preset_seznam": "Seznam.cz",
     "status_locked": "Gesperrt",
-    "status_suspended": "Suspendiert"
+    "status_suspended": "Suspendiert",
+    "domain_routing": "Domain-Routing - als beliebige Adresse dieser Domain senden",
+    "expires_at": "Ablaufdatum"
   },
   "clients": {
     "title": "Zugriffskontrolle",
@@ -108,15 +110,15 @@
     "no_clients": "Keine Clients konfiguriert. Das Relay lehnt alle Verbindungen ab.",
     "warning_open": "Warnung: Ohne Zugriffskontrolle kann Ihr Relay missbraucht werden.",
     "provider": "Anbieter",
-    "provider_none": "— Alle Anbieter —",
-    "no_clients_provider": "Keine Zugriffsregeln — Relay für diesen Anbieter deaktiviert",
-    "save_credentials": "Speichern Sie die Zugangsdaten jetzt — das Passwort wird nicht erneut angezeigt.",
-    "access_required": "Zugriffskontrolle erforderlich — ohne diese wäre das Relay offen für alle",
+    "provider_none": "- Alle Anbieter -",
+    "no_clients_provider": "Keine Zugriffsregeln - Relay für diesen Anbieter deaktiviert",
+    "save_credentials": "Speichern Sie die Zugangsdaten jetzt - das Passwort wird nicht erneut angezeigt.",
+    "access_required": "Zugriffskontrolle erforderlich - ohne diese wäre das Relay offen für alle",
     "regenerate": "Passwort neu generieren",
     "select_provider": "Relay-Konto auswählen",
-    "select_provider_placeholder": "— Anbieter auswählen —",
+    "select_provider_placeholder": "- Anbieter auswählen -",
     "select_email": "E-Mail-Konto",
-    "select_email_placeholder": "— E-Mail auswählen —"
+    "select_email_placeholder": "- E-Mail auswählen -"
   },
   "logs": {
     "title": "Versandprotokoll",
@@ -134,7 +136,13 @@
     "no_logs": "Noch keine E-Mails gesendet.",
     "filter_all": "Alle",
     "filter_sent": "Gesendet",
-    "filter_failed": "Fehlgeschlagen"
+    "filter_failed": "Fehlgeschlagen",
+    "search_placeholder": "Absender, Empfänger, Betreff suchen...",
+    "filter_bounced": "Zurückgewiesen",
+    "total_results": "Ergebnisse",
+    "client_ip": "Client-IP",
+    "proxy_ip": "Proxy-IP",
+    "queue_id": "Warteschlangen-ID"
   },
   "dashboard": {
     "title": "Übersicht",
@@ -247,13 +255,16 @@
     "proxy_disabled": "Deaktiviert",
     "proxy_test": "Test",
     "proxy_confirm_delete": "Proxy \"{name}\" löschen?",
-    "proxy_fallback_hint": "Keine Domains — dieser Proxy wird für nicht zugewiesene Provider verwendet",
+    "proxy_fallback_hint": "Keine Domains - dieser Proxy wird für nicht zugewiesene Provider verwendet",
     "provider_limits": "Provider-Limits",
     "provider_limits_desc": "Globale tägliche Sendelimits pro Provider-Typ. Gilt für alle Benutzer.",
     "provider_type": "Provider-Typ",
     "daily_limit": "Tageslimit",
     "daily_limit_save": "Speichern",
     "daily_limit_saved": "Limit aktualisiert",
-    "daily_limit_reached": "Tageslimit erreicht ({sent}/{limit})"
+    "daily_limit_reached": "Tageslimit erreicht ({sent}/{limit})",
+    "logs": "Protokolle",
+    "all_users": "Alle Benutzer",
+    "user": "Benutzer"
   }
 }

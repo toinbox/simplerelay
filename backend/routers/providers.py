@@ -32,6 +32,7 @@ class ProviderCreate(BaseModel):
     password: str | None = None
     is_default: bool = False
     daily_limit: int | None = None
+    domain_routing: bool = False
 
 
 class ProviderOut(BaseModel):
@@ -47,6 +48,7 @@ class ProviderOut(BaseModel):
     status: str
     daily_limit: int | None
     daily_sent: int
+    domain_routing: bool
     is_locked: bool
     locked_reason: str | None
     expires_at: datetime | None
@@ -185,6 +187,7 @@ def create_provider(
         password_encrypted=encrypt_password(data.password) if data.password else None,
         is_default=data.is_default,
         daily_limit=data.daily_limit,
+        domain_routing=data.domain_routing,
         expires_at=expires_at,
     )
     db.add(provider)
@@ -198,6 +201,25 @@ def create_provider(
     if not postfix_ok:
         result["warning"] = "Provider created but Postfix reload failed. Check server logs."
     return result
+
+
+@router.patch("/{provider_id}/domain-routing")
+def toggle_domain_routing(
+    provider_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Toggle domain routing for a provider."""
+    provider = db.query(Provider).filter(
+        Provider.id == provider_id,
+        Provider.user_id == user.id,
+    ).first()
+    if not provider:
+        raise HTTPException(404, "Provider not found")
+
+    provider.domain_routing = not provider.domain_routing
+    db.commit()
+    return {"domain_routing": provider.domain_routing}
 
 
 @router.delete("/{provider_id}")

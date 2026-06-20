@@ -123,6 +123,10 @@ body {
   max-width: 1000px;
 }
 
+.content:has(.page-wide) {
+  max-width: 1400px;
+}
+
 /* Page header */
 .page-header {
   display: flex;

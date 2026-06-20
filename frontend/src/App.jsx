@@ -12,6 +12,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import AdminUsers from './pages/AdminUsers';
 import AdminProxies from './pages/AdminProxies';
 import AdminLimits from './pages/AdminLimits';
+import AdminLogs from './pages/AdminLogs';
 import LanguageSwitcher from './components/LanguageSwitcher';
 
 export default function App() {
@@ -132,6 +133,10 @@ export default function App() {
                 <span className="nav-icon">📊</span>
                 {t('admin.provider_limits')}
               </NavLink>
+              <NavLink to="/admin/logs" className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}>
+                <span className="nav-icon">📋</span>
+                {t('admin.logs')}
+              </NavLink>
             </>
           )}
         </div>
@@ -162,6 +167,7 @@ export default function App() {
               <Route path="/admin/users" element={<AdminUsers token={token} />} />
               <Route path="/admin/proxies" element={<AdminProxies token={token} />} />
               <Route path="/admin/limits" element={<AdminLimits token={token} />} />
+              <Route path="/admin/logs" element={<AdminLogs token={token} />} />
             </>
           )}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

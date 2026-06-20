@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -27,6 +27,9 @@ class UserListOut(BaseModel):
     max_relays: int
     relay_expiry_days: int | None
     relay_count: int = 0
+    sent_today: int = 0
+    errors_today: int = 0
+    nearest_expiry: datetime | None = None
     created_at: datetime
     last_login: datetime | None
 
@@ -48,14 +51,32 @@ def list_users(
     admin: User = Depends(get_current_admin),
 ):
     """List all users with relay counts."""
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
     users = db.query(User).order_by(User.created_at.desc()).all()
     result = []
     for u in users:
         relay_count = db.query(func.count(Provider.id)).filter(
             Provider.user_id == u.id
         ).scalar() or 0
+        sent_today = db.query(func.count(MailLog.id)).filter(
+            MailLog.user_id == u.id,
+            MailLog.status == MailStatus.SENT,
+            MailLog.created_at >= today_start,
+        ).scalar() or 0
+        errors_today = db.query(func.count(MailLog.id)).filter(
+            MailLog.user_id == u.id,
+            MailLog.status.in_([MailStatus.FAILED, MailStatus.BOUNCED]),
+            MailLog.created_at >= today_start,
+        ).scalar() or 0
         out = UserListOut.model_validate(u)
         out.relay_count = relay_count
+        out.sent_today = sent_today
+        out.errors_today = errors_today
+        nearest_expiry = db.query(func.min(Provider.expires_at)).filter(
+            Provider.user_id == u.id,
+            Provider.expires_at != None,
+        ).scalar()
+        out.nearest_expiry = nearest_expiry
         result.append(out)
     return result
 
@@ -93,6 +114,25 @@ def update_user(
 
     if data.relay_expiry_days is not None:
         user.relay_expiry_days = data.relay_expiry_days if data.relay_expiry_days > 0 else None
+
+        # Immediately update expires_at on all user's providers
+        now = datetime.utcnow()
+        user_providers = db.query(Provider).filter(Provider.user_id == user.id).all()
+        for prov in user_providers:
+            if user.relay_expiry_days and user.relay_expiry_days > 0:
+                prov.expires_at = now + timedelta(days=user.relay_expiry_days)
+                # Auto-unlock if was expired and new date is in future
+                if prov.is_locked and prov.locked_reason == "Relay expired":
+                    prov.is_locked = False
+                    prov.status = ProviderStatus.ACTIVE
+                    prov.locked_reason = None
+            else:
+                # No expiry - clear it and unlock if was expired
+                prov.expires_at = None
+                if prov.is_locked and prov.locked_reason == "Relay expired":
+                    prov.is_locked = False
+                    prov.status = ProviderStatus.ACTIVE
+                    prov.locked_reason = None
 
     if data.name is not None:
         user.name = data.name
@@ -499,6 +539,101 @@ def admin_lock_provider(
 
     db.commit()
     return {"is_locked": provider.is_locked, "status": provider.status.value}
+
+
+# ============================================================
+# ADMIN: MAIL LOGS (ALL USERS)
+# ============================================================
+
+class AdminMailLogOut(BaseModel):
+    id: int
+    user_id: int | None
+    user_email: str | None = None
+    queue_id: str | None
+    sender: str
+    recipient: str
+    subject: str | None
+    provider_name: str | None
+    proxy_ip: str | None
+    status: str
+    error_message: str | None
+    client_ip: str | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/logs", response_model=list[AdminMailLogOut])
+def admin_list_logs(
+    user_id: int | None = None,
+    status: str | None = None,
+    search: str | None = None,
+    limit: int = Query(default=100, le=500),
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """List mail logs across all users with filters."""
+    query = db.query(MailLog).order_by(MailLog.created_at.desc())
+
+    if user_id:
+        query = query.filter(MailLog.user_id == user_id)
+    if status:
+        query = query.filter(MailLog.status == status)
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            (MailLog.sender.ilike(search_pattern)) |
+            (MailLog.recipient.ilike(search_pattern)) |
+            (MailLog.subject.ilike(search_pattern))
+        )
+
+    logs = query.offset(offset).limit(limit).all()
+
+    # Batch-fetch user emails
+    user_ids = set(l.user_id for l in logs if l.user_id)
+    users_map = {}
+    if user_ids:
+        users_list = db.query(User.id, User.email).filter(User.id.in_(user_ids)).all()
+        users_map = {u.id: u.email for u in users_list}
+
+    result = []
+    for log in logs:
+        out = AdminMailLogOut.model_validate(log)
+        out.user_email = users_map.get(log.user_id, '-')
+        result.append(out)
+    return result
+
+
+@router.get("/users/{user_id}/logs", response_model=list[AdminMailLogOut])
+def admin_user_logs(
+    user_id: int,
+    status: str | None = None,
+    limit: int = Query(default=50, le=500),
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    """List mail logs for a specific user."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    query = db.query(MailLog).filter(
+        MailLog.user_id == user_id
+    ).order_by(MailLog.created_at.desc())
+
+    if status:
+        query = query.filter(MailLog.status == status)
+
+    logs = query.offset(offset).limit(limit).all()
+    result = []
+    for log in logs:
+        out = AdminMailLogOut.model_validate(log)
+        out.user_email = user.email
+        result.append(out)
+    return result
 
 
 # ============================================================

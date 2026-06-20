@@ -91,7 +91,9 @@
     "preset_custom": "Custom SMTP",
     "preset_seznam": "Seznam.cz",
     "status_locked": "Locked",
-    "status_suspended": "Suspended"
+    "status_suspended": "Suspended",
+    "domain_routing": "Domain routing - send as any address on this domain",
+    "expires_at": "Expires"
   },
   "clients": {
     "title": "Access control",
@@ -108,15 +110,15 @@
     "no_clients": "No clients configured. Your relay will reject all connections.",
     "warning_open": "Warning: Without access control, your relay is open to abuse.",
     "provider": "Provider",
-    "provider_none": "— All providers —",
-    "no_clients_provider": "No access rules — relay disabled for this provider",
-    "save_credentials": "Save these credentials now — the password won't be shown again.",
-    "access_required": "Access control required — without it this relay would be an open relay",
+    "provider_none": "- All providers -",
+    "no_clients_provider": "No access rules - relay disabled for this provider",
+    "save_credentials": "Save these credentials now - the password won't be shown again.",
+    "access_required": "Access control required - without it this relay would be an open relay",
     "regenerate": "Regenerate password",
     "select_provider": "Select relay account",
-    "select_provider_placeholder": "— Choose a provider —",
+    "select_provider_placeholder": "- Choose a provider -",
     "select_email": "Email account",
-    "select_email_placeholder": "— Select email —"
+    "select_email_placeholder": "- Select email -"
   },
   "logs": {
     "title": "Mail log",
@@ -134,7 +136,13 @@
     "no_logs": "No emails sent yet.",
     "filter_all": "All",
     "filter_sent": "Sent",
-    "filter_failed": "Failed"
+    "filter_failed": "Failed",
+    "search_placeholder": "Search sender, recipient, subject...",
+    "filter_bounced": "Bounced",
+    "total_results": "results",
+    "client_ip": "Client IP",
+    "proxy_ip": "Proxy IP",
+    "queue_id": "Queue ID"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -247,13 +255,16 @@
     "proxy_disabled": "Disabled",
     "proxy_test": "Test",
     "proxy_confirm_delete": "Delete proxy \"{name}\"?",
-    "proxy_fallback_hint": "No domains selected — this proxy will be used for providers not assigned to any other proxy",
+    "proxy_fallback_hint": "No domains selected - this proxy will be used for providers not assigned to any other proxy",
     "provider_limits": "Provider Limits",
     "provider_limits_desc": "Global daily sending limits per provider type. Applies to all users.",
     "provider_type": "Provider Type",
     "daily_limit": "Daily Limit",
     "daily_limit_save": "Save",
     "daily_limit_saved": "Limit updated",
-    "daily_limit_reached": "Daily limit reached ({sent}/{limit})"
+    "daily_limit_reached": "Daily limit reached ({sent}/{limit})",
+    "logs": "Logs",
+    "all_users": "All users",
+    "user": "User"
   }
 }

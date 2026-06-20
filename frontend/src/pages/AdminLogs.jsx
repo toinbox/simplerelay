@@ -1,37 +1,39 @@
-import { apiFetch } from '../api';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 
-export default function Logs() {
+export default function AdminLogs({ token }) {
   const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
+  const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState('');
+  const [userFilter, setUserFilter] = useState('');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const limit = 50;
+
+  const headers = { 'Authorization': `Bearer ${token}` };
+
+  useEffect(() => {
+    fetch('/api/admin/users', { headers }).then(r => r.json()).then(setUsers).catch(() => {});
+  }, []);
 
   const loadLogs = () => {
     setLoading(true);
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (filter) params.set('status', filter);
+    if (userFilter) params.set('user_id', userFilter);
     if (search) params.set('search', search);
-
-    Promise.all([
-      apiFetch(`/api/logs?${params}`).then(r => r.json()),
-      apiFetch(`/api/logs/count?${new URLSearchParams(filter ? { status: filter, ...(search ? { search } : {}) } : (search ? { search } : {}))}`).then(r => r.json()),
-    ]).then(([data, countData]) => {
-      setLogs(data);
-      setTotal(countData.count);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    fetch(`/api/admin/logs?${params}`, { headers })
+      .then(r => r.json())
+      .then(data => { setLogs(data); setLoading(false); })
+      .catch(() => setLoading(false));
   };
 
-  useEffect(() => { setOffset(0); }, [filter, search]);
-  useEffect(() => { loadLogs(); }, [filter, search, offset]);
+  useEffect(() => { setOffset(0); }, [filter, userFilter, search]);
+  useEffect(() => { loadLogs(); }, [filter, userFilter, search, offset]);
 
   const doSearch = () => { setSearch(searchInput); };
 
@@ -46,7 +48,7 @@ export default function Logs() {
   return (
     <div className="page-wide">
       <div className="page-header">
-        <h1 className="page-title">{t('logs.title')}</h1>
+        <h1 className="page-title">{t('admin.logs')}</h1>
       </div>
 
       {/* Filters */}
@@ -60,6 +62,17 @@ export default function Logs() {
             {f === '' ? t('logs.filter_all') : t(`logs.filter_${f}`)}
           </button>
         ))}
+        <select
+          className="form-input"
+          value={userFilter}
+          onChange={e => setUserFilter(e.target.value)}
+          style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }}
+        >
+          <option value="">{t('admin.all_users')}</option>
+          {users.map(u => (
+            <option key={u.id} value={u.id}>{u.email}</option>
+          ))}
+        </select>
         <div style={{ display: 'flex', gap: 4 }}>
           <input
             className="form-input"
@@ -70,13 +83,7 @@ export default function Logs() {
             style={{ padding: '4px 8px', fontSize: 13, width: 200 }}
           />
           <button className="btn btn-sm btn-secondary" onClick={doSearch}>🔍</button>
-          {search && (
-            <button className="btn btn-sm btn-secondary" onClick={() => { setSearchInput(''); setSearch(''); }}>✗</button>
-          )}
         </div>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          {total} {t('logs.total_results')}
-        </span>
       </div>
 
       {loading ? (
@@ -95,6 +102,7 @@ export default function Logs() {
               <thead>
                 <tr>
                   <th>{t('logs.time')}</th>
+                  <th>{t('admin.user')}</th>
                   <th>{t('logs.sender')}</th>
                   <th>{t('logs.recipient')}</th>
                   <th>{t('logs.subject')}</th>
@@ -110,10 +118,11 @@ export default function Logs() {
                       <td style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                         {new Date(log.created_at).toLocaleString()}
                       </td>
-                      <td style={{ fontSize: 12, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.sender}</td>
-                      <td style={{ fontSize: 12, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.recipient}</td>
-                      <td style={{ fontSize: 12, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.subject || '-'}</td>
-                      <td style={{ fontSize: 12, whiteSpace: 'nowrap' }}>{log.provider_name || '-'}</td>
+                      <td style={{ fontSize: 12 }}>{log.user_email || '-'}</td>
+                      <td style={{ fontSize: 12 }}>{log.sender}</td>
+                      <td style={{ fontSize: 12 }}>{log.recipient}</td>
+                      <td style={{ fontSize: 12, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.subject || '-'}</td>
+                      <td style={{ fontSize: 12 }}>{log.provider_name || '-'}</td>
                       <td>{statusBadge(log.status)}</td>
                       <td style={{ textAlign: 'center' }}>
                         <button
@@ -127,7 +136,7 @@ export default function Logs() {
                     </tr>
                     {expandedId === log.id && (
                       <tr key={`${log.id}-detail`}>
-                        <td colSpan={7} style={{ background: 'var(--bg-secondary)', fontSize: 12, padding: 12 }}>
+                        <td colSpan={8} style={{ background: 'var(--bg-secondary)', fontSize: 12, padding: 12 }}>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                             <div><strong>{t('logs.client_ip')}:</strong> {log.client_ip || '-'}</div>
                             <div><strong>{t('logs.proxy_ip')}:</strong> {log.proxy_ip || '-'}</div>
@@ -154,7 +163,7 @@ export default function Logs() {
               ← {t('common.back')}
             </button>
             <span style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: '32px' }}>
-              {offset + 1} - {offset + logs.length} / {total}
+              {offset + 1} - {offset + logs.length}
             </span>
             <button className="btn btn-sm btn-secondary" disabled={logs.length < limit} onClick={() => setOffset(offset + limit)}>
               {t('common.next')} →

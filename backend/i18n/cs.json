@@ -91,7 +91,9 @@
     "preset_custom": "Vlastní SMTP",
     "preset_seznam": "Seznam.cz",
     "status_locked": "Zamčeno",
-    "status_suspended": "Pozastaveno"
+    "status_suspended": "Pozastaveno",
+    "domain_routing": "Domain routing - odesílat jako jakákoliv adresa na této doméně",
+    "expires_at": "Expirace"
   },
   "clients": {
     "title": "Řízení přístupu",
@@ -108,15 +110,15 @@
     "no_clients": "Žádní klienti. Relay odmítne všechna připojení.",
     "warning_open": "Varování: Bez řízení přístupu může být relay zneužit.",
     "provider": "Poskytovatel",
-    "provider_none": "— Všichni poskytovatelé —",
-    "no_clients_provider": "Žádná pravidla přístupu — relay je pro tohoto poskytovatele vypnutý",
-    "save_credentials": "Uložte si přihlašovací údaje — heslo se znovu nezobrazí.",
-    "access_required": "Řízení přístupu je povinné — bez něj by relay byl otevřený pro kohokoliv",
+    "provider_none": "- Všichni poskytovatelé -",
+    "no_clients_provider": "Žádná pravidla přístupu - relay je pro tohoto poskytovatele vypnutý",
+    "save_credentials": "Uložte si přihlašovací údaje - heslo se znovu nezobrazí.",
+    "access_required": "Řízení přístupu je povinné - bez něj by relay byl otevřený pro kohokoliv",
     "regenerate": "Přegenerovat heslo",
     "select_provider": "Vyberte relay účet",
-    "select_provider_placeholder": "— Zvolte poskytovatele —",
+    "select_provider_placeholder": "- Zvolte poskytovatele -",
     "select_email": "Emailový účet",
-    "select_email_placeholder": "— Vyberte email —"
+    "select_email_placeholder": "- Vyberte email -"
   },
   "logs": {
     "title": "Log odesílání",
@@ -134,7 +136,13 @@
     "no_logs": "Zatím nebyly odeslány žádné emaily.",
     "filter_all": "Vše",
     "filter_sent": "Odesláno",
-    "filter_failed": "Selhalo"
+    "filter_failed": "Selhalo",
+    "search_placeholder": "Hledat odesílatele, příjemce, předmět...",
+    "filter_bounced": "Vrácené",
+    "total_results": "výsledků",
+    "client_ip": "IP klienta",
+    "proxy_ip": "IP proxy",
+    "queue_id": "ID fronty"
   },
   "dashboard": {
     "title": "Přehled",
@@ -247,13 +255,16 @@
     "proxy_disabled": "Vypnuto",
     "proxy_test": "Test",
     "proxy_confirm_delete": "Smazat proxy \"{name}\"?",
-    "proxy_fallback_hint": "Žádné domény — tato proxy se použije pro providery nepřiřazené k jiné proxy",
+    "proxy_fallback_hint": "Žádné domény - tato proxy se použije pro providery nepřiřazené k jiné proxy",
     "provider_limits": "Limity providerů",
     "provider_limits_desc": "Globální denní limity odesílání per typ providera. Platí pro všechny uživatele.",
     "provider_type": "Typ providera",
     "daily_limit": "Denní limit",
     "daily_limit_save": "Uložit",
     "daily_limit_saved": "Limit aktualizován",
-    "daily_limit_reached": "Denní limit dosažen ({sent}/{limit})"
+    "daily_limit_reached": "Denní limit dosažen ({sent}/{limit})",
+    "logs": "Logy",
+    "all_users": "Všichni uživatelé",
+    "user": "Uživatel"
   }
 }

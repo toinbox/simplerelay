@@ -40,7 +40,7 @@ export default function AdminUsers({ token }) {
   };
 
   return (
-    <div>
+    <div className="page-wide">
       <div className="page-header">
         <h1 className="page-title">{t('admin.users')}</h1>
       </div>
@@ -74,6 +74,8 @@ export default function AdminUsers({ token }) {
               <th>{t('auth.name')}</th>
               <th>{t('admin.role')}</th>
               <th>Relay</th>
+              <th>{t('admin.total_sent')}</th>
+              <th>{t('admin.total_errors')}</th>
               <th>{t('admin.max_relays')}</th>
               <th>{t('admin.expiry_days')}</th>
               <th>{t('clients.active')}</th>
@@ -91,6 +93,8 @@ export default function AdminUsers({ token }) {
                   </span>
                 </td>
                 <td>{u.relay_count}</td>
+                <td style={{ fontSize: 13 }}>{u.sent_today || 0}</td>
+                <td style={{ fontSize: 13, color: u.errors_today > 0 ? 'var(--error)' : undefined }}>{u.errors_today || 0}</td>
                 <td>
                   {editingId === u.id ? (
                     <input
@@ -115,6 +119,11 @@ export default function AdminUsers({ token }) {
                       placeholder="0"
                     />
                   ) : (u.relay_expiry_days || t('admin.expiry_none'))}
+                  {u.nearest_expiry && !editingId && (
+                    <div style={{ fontSize: 11, color: new Date(u.nearest_expiry) < new Date() ? 'var(--error)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {new Date(u.nearest_expiry).toLocaleDateString()}
+                    </div>
+                  )}
                 </td>
                 <td>
                   <button

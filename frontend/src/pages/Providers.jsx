@@ -171,6 +171,17 @@ export default function Providers() {
     setDnsLoading(null);
   };
 
+  const DOMAIN_ROUTING_TYPES = ['custom', 'amazon_ses', 'sendgrid', 'mailgun'];
+
+  const toggleDomainRouting = async (provider) => {
+    try {
+      await apiFetch(`/api/providers/${provider.id}/domain-routing`, { method: 'PATCH' });
+      loadProviders();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // --- Client (access control) management per provider ---
   const addClientFor = async (providerId) => {
     const providerEmail = providers.find(p => p.id === providerId)?.email || '';
@@ -368,6 +379,35 @@ export default function Providers() {
                   : t('providers.daily_unlimited', { sent: p.daily_sent })
                 }
               </div>
+              {p.expires_at && (
+                <div style={{ fontSize: 13, color: new Date(p.expires_at) < new Date() ? 'var(--error)' : 'var(--text-muted)', marginBottom: 12 }}>
+                  {t('providers.expires_at')}: {new Date(p.expires_at).toLocaleDateString()}
+                </div>
+              )}
+              {p.is_locked && p.locked_reason && (
+                <div className="alert alert-error" style={{ fontSize: 13, marginBottom: 12 }}>
+                  🔒 {p.locked_reason}
+                </div>
+              )}
+
+              {/* Domain routing toggle — only for supported provider types */}
+              {DOMAIN_ROUTING_TYPES.includes(p.provider_type) && (
+                <div style={{ fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={p.domain_routing || false}
+                      onChange={() => toggleDomainRouting(p)}
+                    />
+                    {t('providers.domain_routing')}
+                  </label>
+                  {p.domain_routing && (
+                    <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                      *@{p.email.split('@')[1]}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {/* Relay connection info */}
               <div className="info-box" style={{ marginBottom: 12 }}>
@@ -474,7 +514,7 @@ export default function Providers() {
                                       {showPassword[c.id] ? c.smtp_password_plain : '••••••••••••'}
                                       <button
                                         onClick={() => setShowPassword(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontSize: 12 }}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 4px', fontSize: 16, color: '#ffffff' }}
                                         title={showPassword[c.id] ? 'Hide' : 'Show'}
                                       >
                                         {showPassword[c.id] ? '🙈' : '👁'}

@@ -79,14 +79,38 @@ def lookup_provider(conn, sender_email):
         cur.execute("""
             SELECT p.id, p.email, p.smtp_host, p.smtp_port, p.tls_mode,
                    p.username, p.password_encrypted, p.provider_type, p.proxy_id,
-                   p.user_id, p.daily_limit, p.daily_sent
+                   p.user_id, p.daily_limit, p.daily_sent, p.domain_routing
             FROM providers p
             WHERE p.email = %s
               AND p.status::text IN ('active', 'ACTIVE')
               AND p.is_locked = false
             LIMIT 1
         """, (sender_email,))
-        return cur.fetchone()
+        result = cur.fetchone()
+        if result:
+            return result
+
+    # Fallback: domain routing — match by domain
+    sender_domain = sender_email.split("@")[-1].lower() if "@" in sender_email else None
+    if sender_domain:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT p.id, p.email, p.smtp_host, p.smtp_port, p.tls_mode,
+                       p.username, p.password_encrypted, p.provider_type, p.proxy_id,
+                       p.user_id, p.daily_limit, p.daily_sent, p.domain_routing
+                FROM providers p
+                WHERE p.domain_routing = true
+                  AND LOWER(SPLIT_PART(p.email, '@', 2)) = %s
+                  AND p.status::text IN ('active', 'ACTIVE')
+                  AND p.is_locked = false
+                LIMIT 1
+            """, (sender_domain,))
+            result = cur.fetchone()
+            if result:
+                log.info(f"Domain routing: {sender_email} → provider {result['email']}")
+                return result
+
+    return None
 
 
 def lookup_proxies(conn, proxy_id=None, provider_type=None):
@@ -228,15 +252,16 @@ def check_client_authorized(conn, client_ip, provider):
 
 
 def log_to_db(conn, sender, recipient, provider_name, status,
-              error=None, proxy_name=None, user_id=None, provider_id=None):
+              error=None, proxy_name=None, user_id=None, provider_id=None,
+              client_ip=None):
     """Log delivery result to mail_log table."""
     try:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO mail_log
                     (queue_id, sender, recipient, provider_name, status,
-                     error_message, user_id, provider_id, proxy_ip, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                     error_message, user_id, provider_id, proxy_ip, client_ip, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """, (
                 f"pipe-{uuid.uuid4().hex[:12]}",
                 sender,
@@ -247,6 +272,7 @@ def log_to_db(conn, sender, recipient, provider_name, status,
                 user_id,
                 provider_id,
                 proxy_name,
+                client_ip,
             ))
         conn.commit()
     except Exception as e:
@@ -442,8 +468,9 @@ def _reorder_headers_emclient(msg):
 # SMTP SEND — connect through proxy, EHLO as client
 # ══════════════════════════════════════════════════════════
 
-def send_via_provider(provider, proxy_row, raw_message, sender, recipient):
+def send_via_provider(provider, proxy_row, raw_message, sender, recipient, envelope_sender=None):
     """Send email through provider's SMTP, optionally via SOCKS5 proxy.
+    envelope_sender overrides MAIL FROM (used for domain routing).
     Returns (success, error_message).
     """
     smtp_host = provider["smtp_host"]
@@ -451,6 +478,7 @@ def send_via_provider(provider, proxy_row, raw_message, sender, recipient):
     tls_mode = provider.get("tls_mode", "starttls")
     username = provider.get("username") or provider["email"]
     password_enc = provider.get("password_encrypted", "")
+    mail_from = envelope_sender or sender
 
     try:
         password = decrypt_password(password_enc) if password_enc else ""
@@ -479,7 +507,7 @@ def send_via_provider(provider, proxy_row, raw_message, sender, recipient):
                 smtp.ehlo(ehlo_host)
 
         smtp.login(username, password)
-        smtp.sendmail(sender, [recipient], raw_message)
+        smtp.sendmail(mail_from, [recipient], raw_message)
         smtp.quit()
         return True, None
 
@@ -552,8 +580,17 @@ def main():
             log_to_db(conn, sender, recipient, provider["smtp_host"], "failed",
                        error=f"daily_limit_reached ({daily_sent}/{daily_limit})",
                        user_id=provider.get("user_id"),
-                       provider_id=provider.get("id"))
+                       provider_id=provider.get("id"),
+                       client_ip=client_address)
             sys.exit(EX_UNAVAILABLE)
+
+        # Determine envelope sender for domain routing
+        # When domain routing matched, use provider email as MAIL FROM
+        # so upstream SMTP accepts it. From header in message body stays original.
+        envelope_sender = None
+        if provider.get("domain_routing") and provider["email"].lower() != sender.lower():
+            envelope_sender = provider["email"]
+            log.info(f"Domain routing envelope: MAIL FROM={envelope_sender}, From header={sender}")
 
         # No proxies → send direct (single attempt)
         if not proxies:
@@ -565,7 +602,7 @@ def main():
             proxy_info = f" via proxy {proxy['host']}:{proxy['port']}" if proxy else " (direct)"
             log.info(f"Attempt {i + 1}/{len(proxies)}: {provider['smtp_host']}:{provider['smtp_port']}{proxy_info}")
 
-            success, error = send_via_provider(provider, proxy, cleaned, sender, recipient)
+            success, error = send_via_provider(provider, proxy, cleaned, sender, recipient, envelope_sender)
 
             if success:
                 log.info(f"Delivered: {sender} → {recipient}{proxy_info}")
@@ -574,7 +611,8 @@ def main():
                 log_to_db(conn, sender, recipient, provider["smtp_host"], "sent",
                            proxy_name=proxy["host"] if proxy else None,
                            user_id=provider.get("user_id"),
-                           provider_id=provider.get("id"))
+                           provider_id=provider.get("id"),
+                           client_ip=client_address)
                 sys.exit(EX_OK)
 
             last_error = error
@@ -584,7 +622,9 @@ def main():
                 log.error(f"Permanent failure: {sender} → {recipient}: {error}")
                 log_to_db(conn, sender, recipient, provider["smtp_host"], "failed",
                            error=error, user_id=provider.get("user_id"),
-                           provider_id=provider.get("id"))
+                           provider_id=provider.get("id"),
+                           proxy_name=proxy["host"] if proxy else None,
+                           client_ip=client_address)
                 sys.exit(EX_UNAVAILABLE)
 
             # Connection error — log and try next proxy
@@ -594,7 +634,8 @@ def main():
         log.error(f"All proxies failed: {sender} → {recipient}: {last_error}")
         log_to_db(conn, sender, recipient, provider["smtp_host"], "failed",
                    error=last_error, user_id=provider.get("user_id"),
-                   provider_id=provider.get("id"))
+                   provider_id=provider.get("id"),
+                   client_ip=client_address)
         sys.exit(EX_TEMPFAIL)
 
     except Exception as e:

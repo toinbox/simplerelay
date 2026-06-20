@@ -90,7 +90,9 @@
     "preset_custom": "SMTP personalizado",
     "preset_seznam": "Seznam.cz",
     "status_locked": "Bloqueado",
-    "status_suspended": "Suspendido"
+    "status_suspended": "Suspendido",
+    "domain_routing": "Enrutamiento de dominio - enviar como cualquier dirección en este dominio",
+    "expires_at": "Expira"
   },
   "clients": {
     "title": "Control de acceso",
@@ -107,15 +109,15 @@
     "no_clients": "No hay clientes configurados. El relay rechazará todas las conexiones.",
     "warning_open": "Advertencia: Sin control de acceso, tu relay puede ser utilizado para spam.",
     "provider": "Proveedor",
-    "provider_none": "— Todos los proveedores —",
-    "no_clients_provider": "Sin reglas de acceso — relay deshabilitado para este proveedor",
-    "save_credentials": "Guarda las credenciales ahora — la contraseña no se mostrará de nuevo.",
-    "access_required": "Control de acceso obligatorio — sin él, el relay estaría abierto para cualquiera",
+    "provider_none": "- Todos los proveedores -",
+    "no_clients_provider": "Sin reglas de acceso - relay deshabilitado para este proveedor",
+    "save_credentials": "Guarda las credenciales ahora - la contraseña no se mostrará de nuevo.",
+    "access_required": "Control de acceso obligatorio - sin él, el relay estaría abierto para cualquiera",
     "regenerate": "Regenerar contraseña",
     "select_provider": "Selecciona la cuenta relay",
-    "select_provider_placeholder": "— Elige un proveedor —",
+    "select_provider_placeholder": "- Elige un proveedor -",
     "select_email": "Cuenta de email",
-    "select_email_placeholder": "— Selecciona email —"
+    "select_email_placeholder": "- Selecciona email -"
   },
   "logs": {
     "title": "Registro de envíos",
@@ -133,7 +135,13 @@
     "no_logs": "Aún no se han enviado correos.",
     "filter_all": "Todos",
     "filter_sent": "Enviados",
-    "filter_failed": "Fallidos"
+    "filter_failed": "Fallidos",
+    "search_placeholder": "Buscar remitente, destinatario, asunto...",
+    "filter_bounced": "Rebotados",
+    "total_results": "resultados",
+    "client_ip": "IP del cliente",
+    "proxy_ip": "IP del proxy",
+    "queue_id": "ID de cola"
   },
   "dashboard": {
     "title": "Panel",
@@ -246,13 +254,16 @@
     "proxy_disabled": "Desactivado",
     "proxy_test": "Test",
     "proxy_confirm_delete": "¿Eliminar proxy \"{name}\"?",
-    "proxy_fallback_hint": "Sin dominios — este proxy se usará para proveedores no asignados a otro proxy",
+    "proxy_fallback_hint": "Sin dominios - este proxy se usará para proveedores no asignados a otro proxy",
     "provider_limits": "Límites de proveedores",
     "provider_limits_desc": "Límites diarios globales de envío por tipo de proveedor. Se aplica a todos los usuarios.",
     "provider_type": "Tipo de proveedor",
     "daily_limit": "Límite diario",
     "daily_limit_save": "Guardar",
     "daily_limit_saved": "Límite actualizado",
-    "daily_limit_reached": "Límite diario alcanzado ({sent}/{limit})"
+    "daily_limit_reached": "Límite diario alcanzado ({sent}/{limit})",
+    "logs": "Registros",
+    "all_users": "Todos los usuarios",
+    "user": "Usuario"
   }
 }
