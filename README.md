@@ -106,7 +106,7 @@ Admin users see additional sections:
 **Provider Oversight** - view any user's relay list, lock/unlock individual providers with reason.
 
 ## System Features
-
+- **New:** Domain routing - send as any address on a custom domain through a single provider
 - Postfix-based relay with per-sender routing to correct upstream SMTP
 - Built-in policy server (access control) - every provider requires a whitelisted IP address. Without it, the relay rejects all connections. SMTP AUTH credentials are optional as additional layer. No open relay possible.
 - Automatic provider detection from email address (MX/DNS lookup fallback for unknown domains)
