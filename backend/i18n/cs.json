@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "SimpleRelay",
-    "tagline": "SMT relay pro vaše aplikace – nastavte jednou, odesílejte odkudkoliv"
+    "tagline": "SMTP relay pro vaše aplikace – nastavte jednou, odesílejte odkudkoliv"
   },
   "nav": {
     "dashboard": "Přehled",
