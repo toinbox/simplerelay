@@ -73,7 +73,7 @@ class DnsCheckRequest(BaseModel):
     provider_type: str
 
 
-# --- Endpoints ---
+# --- Endpoints --
 
 @router.get("/presets")
 def list_presets():
