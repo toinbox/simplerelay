@@ -221,7 +221,7 @@ class HealthCheck(Base):
     checked_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
 
-# --- App settings ---
+# --- App settings --
 
 class AppSettings(Base):
     __tablename__ = "app_settings"
