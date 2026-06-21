@@ -39,7 +39,7 @@ class DashboardStats(BaseModel):
     provider_health: list[dict]
 
 
-# --- Logs ---
+# --- Logs --
 
 @router.get("/logs", response_model=list[MailLogOut])
 def get_logs(
