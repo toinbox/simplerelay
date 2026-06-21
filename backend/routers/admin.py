@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
 # ============================================================
-# USER MANAGEMENT
+# USER MANAGEMEN
 # ============================================================
 
 class UserListOut(BaseModel):
